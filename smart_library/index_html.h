@@ -579,7 +579,7 @@ function renderAlarm(danger) {
 }
 $('alarm-ok').onclick = () => { alarm = null; render() };
 
-/* เสียงไซเรนและสั่น: browser เล่นเสียงได้หลังผู้ใช้แตะหน้าเว็บอย่างน้อย 1 ครั้ง */
+/* เสียงไซเรน (Yelp) และสั่น: browser เล่นเสียงได้หลังผู้ใช้แตะหน้าเว็บอย่างน้อย 1 ครั้ง */
 let audio = null, siren = null;
 function unlockAudio() {
   try {
@@ -596,19 +596,22 @@ function beep() {
   // Chrome อาจพักระบบเสียงไว้ (เช่นหลังจอดับ) ถ้าเคยแตะหน้าเว็บแล้วปลุกกลับได้เลย
   if (audio && audio.state !== 'running' && tapped) audio.resume().catch(() => {});
   if (!soundOn()) return;
-  const t = audio.currentTime;
-  [[0, 880], [0.45, 660]].forEach(([dt, freq]) => {   // สองโทนสลับกัน
+  const t = audio.currentTime + 0.02;
+  // Yelp Siren: ไต่ความถี่ 700 -> 1500 Hz ถี่ 4 รอบใน 1 วินาที (setSiren เรียกทุก 1 วินาที)
+  for (let i = 0; i < 4; i++) {
+    const t0 = t + i * 0.25, dur = 0.25;
     const osc = audio.createOscillator(), gain = audio.createGain();
-    osc.type = 'square';
-    osc.frequency.value = freq;
-    gain.gain.setValueAtTime(0.0001, t + dt);
-    gain.gain.exponentialRampToValueAtTime(0.6, t + dt + 0.02);
-    gain.gain.setValueAtTime(0.6, t + dt + 0.38);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t + dt + 0.42);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(700, t0);
+    osc.frequency.linearRampToValueAtTime(1500, t0 + dur);
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.45, t0 + 0.015);
+    gain.gain.setValueAtTime(0.45, t0 + dur - 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
     osc.connect(gain).connect(audio.destination);
-    osc.start(t + dt);
-    osc.stop(t + dt + 0.45);
-  });
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.02);
+  }
 }
 
 function setSiren(on) {
