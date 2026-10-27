@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8">
+<style>
+body { margin:0; background:#fff; }
+text { font-family:"Leelawadee UI","TH Sarabun New",sans-serif; paint-order:stroke; stroke:#fff; stroke-width:6px; stroke-linejoin:round; }
+</style></head><body>
+<svg id="s" width="1000" height="660" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#444"/></marker></defs>
+  <line x1="500" y1="10" x2="500" y2="650" stroke="#ccc" stroke-width="1.5"/>
+  <line x1="10" y1="330" x2="990" y2="330" stroke="#ccc" stroke-width="1.5"/>
+</svg>
+<script>
+const svg = document.getElementById('s'), NS = 'http://www.w3.org/2000/svg', R = 46;
+const el = (tag, at, txt) => { const e = document.createElementNS(NS, tag); for (const k in at) e.setAttribute(k, at[k]); if (txt) e.textContent = txt; svg.appendChild(e); return e; };
+const title = (x, y, t) => el('text', { x, y, 'font-size': 21, 'font-weight': 700, fill: '#222' }, t);
+const label = (x, y, t, anchor = 'middle') => t.split('\n').forEach((ln, i) => el('text', { x, y: y + i * 19, 'text-anchor': anchor, 'font-size': 16, fill: '#333' }, ln));
+function state(x, y, name, init) {
+  el('circle', { cx: x, cy: y, r: R, fill: '#fff', stroke: '#333', 'stroke-width': init ? 4 : 2 });
+  const lines = name.split('\n');
+  lines.forEach((ln, i) => el('text', { x, y: y + 6 + (i - (lines.length - 1) / 2) * 20, 'text-anchor': 'middle', 'font-size': 16, fill: '#111' }, ln));
+  return { x, y };
+}
+function arrow(a, b, bend = 0) {
+  const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy), nx = -dy / d, ny = dx / d;
+  const mx = (a.x + b.x) / 2 + nx * bend, my = (a.y + b.y) / 2 + ny * bend;
+  const sa = Math.atan2(my - a.y, mx - a.x), sb = Math.atan2(my - b.y, mx - b.x);
+  el('path', { d: `M${a.x + R * Math.cos(sa)} ${a.y + R * Math.sin(sa)} Q${mx} ${my} ${b.x + (R + 2) * Math.cos(sb)} ${b.y + (R + 2) * Math.sin(sb)}`, fill: 'none', stroke: '#444', 'stroke-width': 2, 'marker-end': 'url(#a)' });
+}
+function loop(a, dir) {   // dir: 'up' | 'down'
+  const s = dir === 'up' ? -1 : 1, y0 = a.y + s * (R - 4);
+  el('path', { d: `M${a.x - 20} ${y0} C${a.x - 50} ${y0 + s * 62} ${a.x + 50} ${y0 + s * 62} ${a.x + 22} ${y0 + s * 2}`, fill: 'none', stroke: '#444', 'stroke-width': 2, 'marker-end': 'url(#a)' });
+}
+
+// (ก) uart_rx
+title(20, 32, '(ก) uart_rx');
+let I = state(75, 150, 'IDLE', true), S = state(240, 150, 'START'), D = state(410, 150, 'DATA_BITS'), P = state(240, 270, 'STOP');
+arrow(I, S); label(158, 142, 'rx = 0');
+arrow(S, I, 40); label(158, 84, 'rx = 1 (สัญญาณรบกวน)');
+arrow(S, D); label(325, 175, 'ครึ่งบิต');
+loop(D, 'up'); label(410, 48, 'ทุก 434 clock เก็บ 1 บิต');
+arrow(D, P); label(395, 245, 'ครบ 8 บิต', 'start');
+arrow(P, I); label(110, 262, 'stop = 1', 'end'); label(110, 281, '→ valid', 'end');
+
+// (ข) command parser
+title(520, 32, '(ข) แยกเฟรมคำสั่งจาก ESP8266');
+let H = state(600, 145, 'WAIT_HDR', true), C = state(840, 145, 'WAIT_CMD'), A = state(840, 270, 'WAIT_ARG'), K = state(600, 270, 'WAIT_CHK');
+arrow(H, C); label(720, 137, 'byte = A5');
+arrow(C, A); label(895, 212, 'เก็บ cmd', 'start');
+arrow(A, K); label(720, 262, 'เก็บ arg');
+arrow(K, H); label(546, 200, 'chk ถูก →', 'end'); label(546, 219, 'ทำคำสั่ง', 'end');
+loop(H, 'up'); label(660, 70, 'byte ≠ A5', 'start');
+
+// (ค) air conditioner
+title(20, 362, '(ค) แอร์ ประเมินทุก 2 วินาที');
+let HO = state(250, 420, 'HOLD', true), CO = state(105, 568, 'COOL\nac − 0.5'), WA = state(395, 568, 'WARM\nac + 0.5');
+arrow(HO, CO, -16); label(118, 470, 'ห้อง > 26 °C', 'middle');
+arrow(CO, HO, -16); label(212, 520, '24–26 °C');
+arrow(HO, WA, 16); label(382, 470, 'ห้อง < 24 °C');
+arrow(WA, HO, 16); label(288, 520, '24–26 °C');
+arrow(CO, WA, 32); label(250, 640, 'ห้อง < 24 °C');
+arrow(WA, CO, 20); label(250, 552, 'ห้อง > 26 °C');
+label(312, 384, 'ac จำกัด 16–27 °C', 'start');
+
+// (ง) light mode
+title(520, 362, '(ง) โหมดไฟห้อง');
+let AU = state(630, 480, 'AUTO\nไฟ = มืด', true), MA = state(870, 480, 'MANUAL\nไฟ = สั่งเอง');
+arrow(AU, MA, -34); label(750, 432, 'กด SW18 หรือเว็บ');
+arrow(MA, AU, -34); label(750, 545, 'กด SW18 หรือเว็บ');
+loop(AU, 'down'); label(630, 610, 'LDR < 2100 → มืด'); label(630, 629, 'LDR > 2300 → สว่าง');
+loop(MA, 'down'); label(870, 610, 'SW14 หรือเว็บ'); label(870, 629, 'สลับไฟ');
+</script>
+</body></html>

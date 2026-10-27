@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8">
+<style>
+body { margin:0; background:#fff; font-family:"Leelawadee UI","TH Sarabun New",sans-serif; }
+text { font-family:"Leelawadee UI",sans-serif; paint-order:stroke; stroke:#fff; stroke-width:7px; stroke-linejoin:round; }
+</style></head><body>
+<svg id="s" width="1000" height="640" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker></defs>
+</svg>
+<script>
+const svg = document.getElementById('s'), NS = 'http://www.w3.org/2000/svg', R = 46, SC = 0.625;
+const el = (tag, attrs, text) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text) e.textContent = text; svg.appendChild(e); return e; };
+function title(x, y, t) {
+  x *= SC; y *= SC; el('text', { x, y, 'font-size': 21, 'font-weight': 600, fill: '#333' }, t); }
+function state(x, y, name, init) {
+  x *= SC; y *= SC;
+  el('circle', { cx: x, cy: y, r: R, fill: '#fff', stroke: '#444', 'stroke-width': init ? 4 : 2 });
+  name.split('\n').forEach((ln, i, arr) => el('text', { x, y: y + 7 + (i - (arr.length - 1) / 2) * 19, 'text-anchor': 'middle', 'font-size': 17, fill: '#222' }, ln));
+  return { x, y };
+}
+// arrow between states with curvature bend (pixels), label offset along normal
+function arrow(a, b, label, bend = 0, lo = 18) {
+  const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy), ux = dx / d, uy = dy / d, nx = -uy, ny = ux;
+  const mx = (a.x + b.x) / 2 + nx * bend, my = (a.y + b.y) / 2 + ny * bend;
+  const sa = Math.atan2(my - a.y, mx - a.x), sb = Math.atan2(my - b.y, mx - b.x);
+  const x1 = a.x + R * Math.cos(sa), y1 = a.y + R * Math.sin(sa), x2 = b.x + (R + 2) * Math.cos(sb), y2 = b.y + (R + 2) * Math.sin(sb);
+  el('path', { d: `M${x1} ${y1} Q${mx} ${my} ${x2} ${y2}`, fill: 'none', stroke: '#555', 'stroke-width': 2, 'marker-end': 'url(#a)' });
+  const s = bend >= 0 ? 1 : -1;
+  const lx = (x1 + 2 * mx + x2) / 4 + nx * lo * s, ly = (y1 + 2 * my + y2) / 4 + ny * lo * s;
+  label.split('\n').forEach((ln, i) => el('text', { x: lx, y: ly + i * 19, 'text-anchor': 'middle', 'font-size': 15, fill: '#444' }, ln));
+}
+function loop(a, label, dir = 'up') {
+  const sgn = dir === 'up' ? -1 : 1, y0 = a.y + sgn * R;
+  el('path', { d: `M${a.x - 22} ${y0 + sgn * -4} C${a.x - 60} ${y0 + sgn * 75} ${a.x + 60} ${y0 + sgn * 75} ${a.x + 24} ${y0 + sgn * -2}`, fill: 'none', stroke: '#555', 'stroke-width': 2, 'marker-end': 'url(#a)' });
+  label.split('\n').forEach((ln, i) => el('text', { x: a.x, y: y0 + sgn * 78 + (sgn < 0 ? -6 : 18) + i * 19, 'text-anchor': 'middle', 'font-size': 15, fill: '#444' }, ln));
+}
+
+// (ก) uart_rx
+title(30, 40, '(ก) uart_rx: รับข้อมูล UART 8N1');
+let I = state(130, 250, 'IDLE', true), S = state(370, 250, 'START'), D = state(610, 250, 'DATA_BITS'), P = state(370, 430, 'STOP');
+arrow(I, S, 'rx = 0');
+arrow(S, D, 'ครึ่งบิต\nและ rx = 0', 0, 34);
+arrow(S, I, 'rx = 1 (สัญญาณรบกวน)', 60, 22);
+arrow(D, P, 'ครบ 8 บิต', -20, 30);
+arrow(P, I, 'ครบ 1 บิต\nrx = 1 → valid', -20, 48);
+loop(D, 'ทุก 434 clock\nเก็บ 1 บิต');
+
+// (ข) command parser
+title(830, 40, '(ข) แยกเฟรมคำสั่งจาก ESP8266');
+let H = state(1050, 220, 'WAIT_HDR', true), C = state(1330, 220, 'WAIT_CMD'), A = state(1330, 460, 'WAIT_ARG'), K = state(1050, 460, 'WAIT_CHK');
+arrow(H, C, 'byte = A5');
+arrow(C, A, 'เก็บ cmd', 0, 50);
+arrow(A, K, 'เก็บ arg');
+arrow(K, H, 'chk = ~(cmd ⊕ arg)\n→ ทำคำสั่ง + ส่งสถานะ\nไม่ตรง → ทิ้งเฟรม', -0.01, 125);
+loop(H, 'byte ≠ A5', 'up');
+
+// (ค) AC
+title(30, 560, '(ค) แอร์: ประเมินทุก 2 วินาที');
+let HO = state(330, 700, 'HOLD', true), CO = state(150, 880, 'COOL\nac − 0.5'), WA = state(510, 880, 'WARM\nac + 0.5');
+arrow(HO, CO, '> 26.0', -30, 14);
+arrow(CO, HO, '24.0 ≤ ห้อง ≤ 26.0', -30, 70);
+arrow(HO, WA, '< 24.0', 30, 14);
+arrow(WA, HO, '24.0 ≤ ห้อง ≤ 26.0', 30, 70);
+arrow(CO, WA, 'ห้อง < 24.0', 30, 6);
+arrow(WA, CO, 'ห้อง > 26.0', 30, 6);
+el('text', { x: 620*SC, y: 700*SC, 'font-size': 16, fill: '#555' }, 'ac จำกัดในช่วง');
+el('text', { x: 620*SC, y: 720*SC, 'font-size': 16, fill: '#555' }, '16.0–27.0 °C');
+
+// (ง) light mode
+title(830, 560, '(ง) โหมดไฟห้อง');
+let AU = state(1000, 760, 'AUTO\nไฟ = มืด', true), MA = state(1380, 760, 'MANUAL\nไฟ = สั่งเอง');
+arrow(AU, MA, 'กด SW18 หรือเว็บ\nlight_manual ← dark', 40);
+arrow(MA, AU, 'กด SW18 หรือเว็บ', 40);
+loop(AU, 'LDR < 2100 → มืด\nLDR > 2300 → สว่าง', 'down');
+loop(MA, 'SW14 หรือเว็บ\nสลับไฟ', 'down');
+</script>
+</body></html>
