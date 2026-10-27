@@ -119,8 +119,7 @@ def cant_split(row):
 
 # ---------------- หน้า 1 ----------------
 para('แบบข้อเสนอโครงงาน (Proposal)', bold=True, size=20, align=WD_ALIGN_PARAGRAPH.CENTER, indent_first=False, after=2)
-para('Digital System Fundamentals Assignment 2569', size=16, align=WD_ALIGN_PARAGRAPH.CENTER, indent_first=False, after=2)
-para('ฉบับปรับปรุงตามชิ้นงานจริง (28 ตุลาคม 2569)', size=14, align=WD_ALIGN_PARAGRAPH.CENTER, indent_first=False, after=14)
+para('Digital System Fundamentals Assignment 2569', size=16, align=WD_ALIGN_PARAGRAPH.CENTER, indent_first=False, after=14)
 
 p = para([('ชื่อโครงงาน ', True), ('Smart Library (ระบบห้องสมุดอัจฉริยะ)', False)], size=18,
          align=WD_ALIGN_PARAGRAPH.LEFT, indent_first=False, after=8)
@@ -330,7 +329,6 @@ for r, (name, marks) in enumerate(plan, 1):
 for row in t.rows:
     for i, w in enumerate(widths):
         row.cells[i].width = w
-note('แผนการดำเนินงานเป็นแผนเดิมตามข้อเสนอโครงงานฉบับแรก')
 
 doc.save(OUT)
 print('saved', OUT)
