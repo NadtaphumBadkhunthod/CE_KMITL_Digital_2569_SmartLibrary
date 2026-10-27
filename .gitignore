@@ -1,0 +1,17 @@
+# Vivado / build output
+*.log
+*.jou
+*.str
+.Xil/
+*.backup.log
+
+# Arduino build output
+smart_library/build/
+
+# Office lock files and OS junk
+~$*
+Thumbs.db
+desktop.ini
+
+# Local tool state
+.taste-skill/
