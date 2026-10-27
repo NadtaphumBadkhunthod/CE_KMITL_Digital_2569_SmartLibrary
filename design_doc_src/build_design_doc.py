@@ -104,7 +104,10 @@ def para(text='', bold=False, size=None, align=None, indent=True, before=0, afte
                 run(p, t, bold='b' in style, mono='m' in style, size=size)
     return p
 
-def h1(t): return doc.add_heading(t, level=1)
+def h1(t):
+    h = doc.add_heading(t, level=1)
+    h.paragraph_format.page_break_before = True   # ทุกบทขึ้นหน้าใหม่
+    return h
 def h2(t): return doc.add_heading(t, level=2)
 def h3(t): return doc.add_heading(t, level=3)
 
@@ -158,6 +161,7 @@ def caption(kind, text):
 
 def table(header, rows, widths, title=None, size=14, mono_cols=()):
     if title:
+        doc.paragraphs[-1].paragraph_format.keep_with_next = True   # ย่อหน้านำไม่ค้างท้ายหน้า
         caption('table', title)
     t = doc.add_table(rows=1 + len(rows), cols=len(header))
     t.style = 'Table Grid'
@@ -200,6 +204,7 @@ def code(lines):
         p.paragraph_format.space_after = Pt(0)
         run(p, ln if ln else ' ', size=10, mono=True, cs_size=14)
     c.width = Cm(15.9)
+    t.rows[0]._tr.get_or_add_trPr().append(OxmlElement('w:cantSplit'))   # ไม่แยกโค้ดข้ามหน้า
     doc.add_paragraph().paragraph_format.space_after = Pt(2)
 
 def page_break():
@@ -260,7 +265,6 @@ page_break()
 # =====================================================================
 para('สารบัญ', bold=True, size=22, align=WD_ALIGN_PARAGRAPH.CENTER, indent=False, after=10)
 field(doc.add_paragraph(), r'TOC \o "1-2" \h \z \u', 'คลิกขวาแล้วเลือก Update Field เพื่อสร้างสารบัญ')
-page_break()
 
 # =====================================================================
 # 1 ภาพรวม
@@ -589,7 +593,7 @@ table(['รายการ', 'วิธีทดสอบ', 'ผล'], [
     ['เขียน Flash บอร์ด 1', 'upload_board1_prom.bat', 'Erase และ Write ครบ 100%'],
 ], [4.2, 6.0, 5.7], 'ผลการทดสอบบนบอร์ดที่บันทึกไว้', size=13)
 h2('5.4 ตารางทดสอบรวมระบบ')
-para('ใช้ตารางนี้ทดสอบก่อนนำเสนอ และบันทึกผลในคอลัมน์สุดท้าย')
+para('ใช้ตารางนี้ทดสอบก่อนนำเสนอ และบันทึกผลในคอลัมน์สุดท้าย', keep=True)
 table(['กรณีทดสอบ', 'ขั้นตอน', 'ผลที่ต้องได้', 'ผล'], [
     ['ที่นั่ง', 'SW2 = 1, SW4 = 1', 'LCD Used 3 / Free 4, เว็บช่อง 1–3 เต็ม', '☐ ผ่าน ☐ ไม่ผ่าน'],
     ['ที่นั่งเต็ม', 'SW2 SW4 SW5 = 1', 'LCD Used 7 / Free 0', '☐ ผ่าน ☐ ไม่ผ่าน'],
