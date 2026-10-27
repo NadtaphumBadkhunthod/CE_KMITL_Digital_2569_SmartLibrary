@@ -58,8 +58,6 @@ for name, size in (('Heading 1', 22), ('Heading 2', 18), ('Heading 3', 16)):
     set_font(hs.element.get_or_add_rPr(), size)
     hs.paragraph_format.space_before = Pt({'Heading 1': 0, 'Heading 2': 12, 'Heading 3': 8}[name])
     hs.paragraph_format.space_after = Pt({'Heading 1': 18, 'Heading 2': 4, 'Heading 3': 2}[name])
-    if name == 'Heading 1':
-        hs.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
     hs.paragraph_format.keep_with_next = True
 for name in ('TOC 1', 'TOC 2', 'TOC 3'):
     try:
@@ -191,7 +189,6 @@ def table(header, rows, widths, title=None, size=14, mono_cols=()):
     style_table(t)
     for i, h in enumerate(header):
         cell_text(t.rows[0].cells[i], h, bold=True, size=size, align=WD_ALIGN_PARAGRAPH.CENTER)
-        shade(t.rows[0].cells[i], 'E8EEF6')
     trPr = t.rows[0]._tr.get_or_add_trPr()
     hdr = OxmlElement('w:tblHeader'); trPr.append(hdr)
     for r, row in enumerate(rows, 1):
@@ -221,7 +218,6 @@ def code(lines):
     t.style = 'Table Grid'
     style_table(t, pad=110)
     c = t.rows[0].cells[0]
-    shade(c, 'F6F7F9')
     c.text = ''
     for k, ln in enumerate(lines.strip('\n').split('\n')):
         p = c.paragraphs[0] if k == 0 else c.add_paragraph()
@@ -250,13 +246,6 @@ fp = sec.footer.paragraphs[0]
 fp.alignment = WD_ALIGN_PARAGRAPH.CENTER
 field(fp, 'PAGE', '1')
 sec.different_first_page_header_footer = True
-hp = sec.header.paragraphs[0]
-hp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-run(hp, 'Design Document · Smart Library', size=12, color='7F7F7F')
-pPr = hp._p.get_or_add_pPr()
-bdr = OxmlElement('w:pBdr'); bot = OxmlElement('w:bottom')
-bot.set(qn('w:val'), 'single'); bot.set(qn('w:sz'), '4'); bot.set(qn('w:space'), '4'); bot.set(qn('w:color'), 'BFC5CC')
-bdr.append(bot); pPr.append(bdr)
 
 # =====================================================================
 # ปก
