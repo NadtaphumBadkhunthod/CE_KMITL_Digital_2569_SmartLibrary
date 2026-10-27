@@ -394,6 +394,7 @@ end rtl;
 
 -- ============================================================
 -- LCD 16x2 แสดงจำนวนที่นั่งว่าง / ไม่ว่าง
+-- ไฟไหม้ (fire = '1'): บรรทัด 1 "!! FIRE ALARM !!" / บรรทัด 2 "EVACUATE NOW" กะพริบตาม blink
 -- ============================================================
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
@@ -404,6 +405,8 @@ entity lcd16x2 is
     clk      : in  std_logic;
     free_cnt : in  unsigned(2 downto 0);   -- 0-7
     used_cnt : in  unsigned(2 downto 0);   -- 0-7
+    fire     : in  std_logic;              -- 1 = ควันอันตราย แสดงข้อความไฟไหม้แทน
+    blink    : in  std_logic;              -- จังหวะกะพริบบรรทัด 2 ตอนไฟไหม้
     lcd_rs   : out std_logic;
     lcd_en   : out std_logic;
     lcd_data : out std_logic_vector(7 downto 0)
@@ -413,6 +416,8 @@ end lcd16x2;
 architecture rtl of lcd16x2 is
   constant LINE1    : string(1 to 16) := "Free seats: 0   ";
   constant LINE2    : string(1 to 16) := "Used seats: 0   ";
+  constant FIRE1    : string(1 to 16) := "!! FIRE ALARM !!";
+  constant FIRE2    : string(1 to 16) := "  EVACUATE NOW  ";
   constant POWER_UP : integer := 2_500_000;   -- 50 ms
   constant T_LONG   : integer := 250_000;     -- 5 ms
   constant T_SHORT  : integer := 2_500;       -- 50 us
@@ -450,10 +455,24 @@ begin
           when 5                  => d := x"06";
           when 6                  => d := x"80";
           when 23                 => d := x"C0";
-          when 19                 => rs := '1'; d := digit_char(free_cnt);
-          when 36                 => rs := '1'; d := digit_char(used_cnt);
-          when 7 to 18 | 20 to 22 => rs := '1'; d := ascii(LINE1(idx - 6));
-          when others             => rs := '1'; d := ascii(LINE2(idx - 23));
+          when 7 to 22 =>                                   -- บรรทัด 1
+            rs := '1';
+            if fire = '1' then
+              d := ascii(FIRE1(idx - 6));
+            elsif idx = 19 then
+              d := digit_char(free_cnt);
+            else
+              d := ascii(LINE1(idx - 6));
+            end if;
+          when others =>                                    -- บรรทัด 2 (idx 24-39)
+            rs := '1';
+            if fire = '1' then
+              if blink = '1' then d := ascii(FIRE2(idx - 23)); else d := ascii(' '); end if;
+            elsif idx = 36 then
+              d := digit_char(used_cnt);
+            else
+              d := ascii(LINE2(idx - 23));
+            end if;
         end case;
 
         if idx <= 5 then period := T_LONG; else period := T_SHORT; end if;
@@ -691,7 +710,7 @@ begin
               seg => seg, dp => dp, digit => digit);
 
   lcd : entity work.lcd16x2
-    port map (clk => clk, free_cnt => free_cnt, used_cnt => used_cnt,
+    port map (clk => clk, free_cnt => free_cnt, used_cnt => used_cnt, fire => danger, blink => beep,
               lcd_rs => lcd_rs, lcd_en => lcd_en, lcd_data => lcd_data);
 
   esp_in : entity work.uart_rx generic map (CLKS_PER_BIT => CLKS_PER_BIT)

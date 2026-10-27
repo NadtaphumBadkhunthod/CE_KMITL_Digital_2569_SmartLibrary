@@ -109,7 +109,7 @@ void handleBooks() {   // [[id,"name",zone,shelf,count],...]
 void setup() {
   Serial.begin(115200);
   WiFi.mode(WIFI_AP);
-  WiFi.softAP(AP_SSID, AP_PASS);          // เปิดเว็บที่ http://192.168.4.1
+  WiFi.softAP(AP_SSID, AP_PASS, 1 ,0, 8);          // เปิดเว็บที่ http://192.168.4.1
 
   server.on("/", [] { server.send_P(200, "text/html", INDEX_HTML); });
   server.on("/api/state", handleState);
