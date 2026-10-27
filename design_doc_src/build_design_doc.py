@@ -12,7 +12,7 @@ import os, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJ = os.path.dirname(HERE)
 OUT = sys.argv[1]
-FONT = 'TH Sarabun New'
+FONT = 'TH Sarabun New'   # SarabunIT๙ แสดงเลขอารบิกเป็นเลขไทย จึงใช้ New กับเอกสารเทคนิค
 BODY = 16
 
 doc = Document()
@@ -44,7 +44,7 @@ set_font(st.element.get_or_add_rPr(), BODY)
 st.paragraph_format.space_after = Pt(0)
 st.paragraph_format.line_spacing = 1.0
 
-for name, size in (('Heading 1', 22), ('Heading 2', 18), ('Heading 3', 16)):
+for name, size in (('Heading 1', 18), ('Heading 2', 16), ('Heading 3', 16)):
     hs = doc.styles[name]
     hs.font.name = FONT
     hs.font.size = Pt(size)
@@ -56,8 +56,10 @@ for name, size in (('Heading 1', 22), ('Heading 2', 18), ('Heading 3', 16)):
         if col is not None and col.get(qn(a)) is not None:
             del col.attrib[qn(a)]
     set_font(hs.element.get_or_add_rPr(), size)
-    hs.paragraph_format.space_before = Pt({'Heading 1': 0, 'Heading 2': 12, 'Heading 3': 8}[name])
-    hs.paragraph_format.space_after = Pt({'Heading 1': 18, 'Heading 2': 4, 'Heading 3': 2}[name])
+    hs.paragraph_format.space_before = Pt({'Heading 1': 18, 'Heading 2': 10, 'Heading 3': 6}[name])
+    hs.paragraph_format.space_after = Pt({'Heading 1': 6, 'Heading 2': 2, 'Heading 3': 0}[name])
+    if name == 'Heading 3':
+        hs.paragraph_format.left_indent = Cm(0.5)
     hs.paragraph_format.keep_with_next = True
 for name in ('TOC 1', 'TOC 2', 'TOC 3'):
     try:
@@ -106,7 +108,6 @@ def para(text='', bold=False, size=None, align=None, indent=True, before=0, afte
 
 def h1(t):
     h = doc.add_heading(t, level=1)
-    h.paragraph_format.page_break_before = True   # ทุกบทขึ้นหน้าใหม่
     return h
 def h2(t): return doc.add_heading(t, level=2)
 def h3(t): return doc.add_heading(t, level=3)
@@ -120,7 +121,7 @@ def items(lst, num=False, left=1.9, hang=0.65):
         pf.space_after = Pt(2)
         pf.tab_stops.add_tab_stop(Cm(left))
         p.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        run(p, f'{i}.\t' if num else '•\t')
+        run(p, f'{i}.\t' if num else '-\t')
         parts = [t] if isinstance(t, str) else t
         for part in parts:
             if isinstance(part, str):
@@ -144,7 +145,7 @@ def cell_text(cell, text, bold=False, size=14, mono=False, align=WD_ALIGN_PARAGR
         p.paragraph_format.space_after = Pt(0)
         run(p, ln, bold, 10 if mono else size, mono=mono, cs_size=size)
 
-def style_table(t, pad=45, color='BFC5CC'):
+def style_table(t, pad=15, color='000000'):
     tblPr = t._tbl.tblPr
     borders = OxmlElement('w:tblBorders')
     for edge in ('top', 'left', 'bottom', 'right', 'insideH', 'insideV'):
@@ -179,7 +180,7 @@ def caption(kind, text):
     run(p, label + ' ', bold=True, size=15)
     run(p, text, size=15)
 
-def table(header, rows, widths, title=None, size=14, mono_cols=()):
+def table(header, rows, widths, title=None, size=15, mono_cols=()):
     if title:
         doc.paragraphs[-1].paragraph_format.keep_with_next = True   # ย่อหน้านำไม่ค้างท้ายหน้า
         caption('table', title)
@@ -198,10 +199,9 @@ def table(header, rows, widths, title=None, size=14, mono_cols=()):
     for row in t.rows:
         for i, w in enumerate(widths):
             row.cells[i].width = Cm(w)
-    for row in t.rows[:-1]:
-        for c in row.cells:
-            for cp in c.paragraphs:
-                cp.paragraph_format.keep_with_next = True
+    for c in t.rows[0].cells:          # หัวตารางไม่ค้างท้ายหน้า ส่วนแถวอื่นต่อหน้าถัดไปได้ (หัวตารางซ้ำให้)
+        for cp in c.paragraphs:
+            cp.paragraph_format.keep_with_next = True
     spacer()
     return t
 
@@ -285,6 +285,7 @@ page_break()
 # =====================================================================
 para('สารบัญ', bold=True, size=22, align=WD_ALIGN_PARAGRAPH.CENTER, indent=False, after=10)
 field(doc.add_paragraph(), r'TOC \o "1-2" \h \z \u', 'คลิกขวาแล้วเลือก Update Field เพื่อสร้างสารบัญ')
+page_break()
 
 # =====================================================================
 # 1 ภาพรวม
@@ -345,7 +346,7 @@ table(['ประเด็น', 'ข้อมูลเดิม', 'วิธี�
     ['การขับพัดลม', 'ต่อพัดลมตรงกับขา FPGA', 'เว็บแสดงว่าเปิด แต่พัดลมไม่หมุน (24 ต.ค. 2569) เพราะขา LVCMOS33 จ่ายกระแสได้ราว 12 mA', 'ต้องมีวงจรขับ (ทรานซิสเตอร์ / MOSFET / โมดูล)'],
     ['การอัปโหลดโปรแกรม ESP8266 ผ่านบอร์ด', 'คาดว่าอัปโหลดได้ตามปกติ', 'ขึ้นข้อความ Timed out waiting for packet header เพราะทาง FPGA มีแค่ TX/RX ไม่มี DTR/RTS', 'ต้องเข้า bootloader เอง (GPIO0 ลง GND + รีเซ็ตด้วย J11) และเพิ่มโหมดส่งข้อมูลทะลุด้วย SW8'],
     ['Buzzer', 'คู่มือระบุว่าเป็น piezo', 'จ่าย 1 ค้างแล้วมีเสียง (24 ต.ค. 2569)', 'เสียงเตือนใช้ 1 ค้างเป็นจังหวะ ส่วนเพลงใช้คลื่นสี่เหลี่ยมตามความถี่โน้ต'],
-], [3.0, 3.6, 5.3, 4.0], 'ผลการทดลองยืนยันข้อมูลบนบอร์ด', size=13)
+], [3.0, 3.6, 5.3, 4.0], 'ผลการทดลองยืนยันข้อมูลบนบอร์ด', size=14)
 
 h2('2.3 ข้อกำหนดการออกแบบที่ได้จากการหาข้อมูล')
 items([
@@ -466,7 +467,7 @@ table(['ส่วน', 'หลักการ', 'เหตุผลของก�
     ['ส่งสถานะ', 'ตั้งธงคำขอ status_req แล้วส่งเมื่อตัวส่งว่าง', 'คำขอที่มาตอนกำลังส่งเฟรมก่อนหน้าจะไม่หาย'],
     ['ส่งตำแหน่ง', 'ส่งเฟรมตำแหน่งให้บอร์ด 2 ทุก 50 ms', 'ถ้าเฟรมหายจะได้เฟรมใหม่ภายใน 50 ms บอร์ด 2 ไม่ต้องส่งตอบกลับ'],
     ['อัปโหลด ESP', 'esp_rx = sw_prog ? usb_rx : fpga_tx และ usb_tx = esp_tx', 'อัปโหลดโปรแกรม ESP ผ่าน USB ของบอร์ดได้โดยไม่ต้องเปลี่ยนสาย'],
-], [2.6, 7.0, 6.3], 'ส่วนประกอบของตรรกะควบคุมหลัก', size=13)
+], [2.6, 7.0, 6.3], 'ส่วนประกอบของตรรกะควบคุมหลัก', size=14)
 code('''
 when x"02" =>                     -- หาหนังสือ
   loc <= arg;                     -- ตำแหน่ง = โซน << 4 | ชั้น
@@ -521,7 +522,7 @@ table(['วงจร', 'การต่อ', 'การคำนวณและ�
     ['พัดลม', 'F11 → R 1 กิโลโอห์ม → ทรานซิสเตอร์ NPN (หรือ MOSFET logic-level) → พัดลม + ไดโอดคร่อม', 'ขา FPGA จ่ายกระแสไม่พอสำหรับมอเตอร์ ไดโอดป้องกันแรงดันย้อนตอนตัดไฟมอเตอร์'],
     ['MQ-2', 'DO → L14 (ระดับ 3.3 V)', 'ใช้ขาดิจิทัล ไม่ต้องใช้ ADC ปรับความไวที่ตัวต้านทานปรับค่าบนโมดูล'],
     ['สายระหว่างบอร์ด', 'C14 → C14 และ GND → GND', 'ต้องต่อ GND ร่วม มิฉะนั้นระดับสัญญาณไม่มีจุดอ้างอิงและเฟรมเสีย'],
-], [3.0, 5.4, 7.5], 'วงจรภายนอกบอร์ด', size=13)
+], [3.0, 5.4, 7.5], 'วงจรภายนอกบอร์ด', size=14)
 
 # =====================================================================
 # 4 พัฒนา
@@ -571,7 +572,7 @@ table(['ปัญหา', 'สาเหตุ', 'การแก้ไข'], [
     ['เว็บยกเลิก Follow เองทันทีหลังกด', 'เฟรมสถานะเก่าที่ยังไม่มีตำแหน่งใหม่มาถึงก่อน', 'ESP จำเวลาที่ส่งคำสั่ง และยกเลิกเฉพาะเมื่อเฟรมใหม่กว่าคำสั่งบอกว่าไม่มีตำแหน่ง'],
     ['ที่นั่งรองรับได้แค่ 3 ที่', 'ใช้สวิตช์ 1 ตัวต่อ 1 ที่', 'เปลี่ยนเป็นเลขฐานสอง 3 บิต รองรับ 7 ที่'],
     ['ไฟชั้นสีเขียวหรี่', 'LED เขียว Vf สูงใกล้ 3.3 V', 'ใช้ LED สีเหลืองแทนที่ชั้นสีเขียว'],
-], [4.6, 5.0, 6.3], 'ปัญหาที่พบระหว่างพัฒนาและวิธีแก้', size=13)
+], [4.6, 5.0, 6.3], 'ปัญหาที่พบระหว่างพัฒนาและวิธีแก้', size=14)
 
 h2('4.5 ทรัพยากรที่ใช้บน FPGA')
 para('ผลจาก Vivado หลัง place and route ที่สัญญาณนาฬิกา 50 MHz (คาบ 20 ns)')
@@ -611,7 +612,7 @@ table(['รายการ', 'วิธีทดสอบ', 'ผล'], [
     ['Buzzer เตือนควัน', 'SW9 = 1 และพ่นควันที่ MQ-2', 'มีเสียงดังเป็นจังหวะ (24 ต.ค. 2569)'],
     ['เสียงเตือนบนเว็บ', 'หน้า Smoke แตะกล่องสถานะบนมือถือ Android', 'ได้ยินเสียง (25 ต.ค. 2569)'],
     ['เขียน Flash บอร์ด 1', 'upload_board1_prom.bat', 'Erase และ Write ครบ 100%'],
-], [4.2, 6.0, 5.7], 'ผลการทดสอบบนบอร์ดที่บันทึกไว้', size=13)
+], [4.2, 6.0, 5.7], 'ผลการทดสอบบนบอร์ดที่บันทึกไว้', size=14)
 h2('5.4 ตารางทดสอบรวมระบบ')
 para('ใช้ตารางนี้ทดสอบก่อนนำเสนอ และบันทึกผลในคอลัมน์สุดท้าย', keep=True)
 table(['กรณีทดสอบ', 'ขั้นตอน', 'ผลที่ต้องได้', 'ผล'], [
@@ -629,7 +630,7 @@ table(['กรณีทดสอบ', 'ขั้นตอน', 'ผลที่�
     ['ยกเลิก Follow', 'กด Follow ซ้ำ', 'ไฟดับ, บอร์ด 2 แสดง ----, ไม่มีเพลง', '☐ ผ่าน ☐ ไม่ผ่าน'],
     ['สายหลุด', 'ถอดสาย C14 ขณะ Follow', 'ไฟดับภายใน 0.5 วินาที', '☐ ผ่าน ☐ ไม่ผ่าน'],
     ['คุณภาพสาย', 'SW2 บอร์ด 2 = 1 ขณะ Follow', 'E000 ค้าง จุดขวาสุดกะพริบสม่ำเสมอ', '☐ ผ่าน ☐ ไม่ผ่าน'],
-], [2.6, 4.4, 6.0, 2.9], 'กรณีทดสอบรวมระบบ', size=13)
+], [2.6, 4.4, 6.0, 2.9], 'กรณีทดสอบรวมระบบ', size=14)
 h2('5.5 ค่าที่ต้องปรับเทียบก่อนนำเสนอ')
 items([
     'TEMP_SCALE ใน board1.vhd (ค่าปัจจุบัน 250): ตั้ง SW7-SW6 = 10 แล้วเทียบกับเทอร์โมมิเตอร์',
@@ -678,7 +679,7 @@ table(['port', 'ทิศ', 'ขา', 'บนบอร์ด'], [
     ['lcd_rs / lcd_en', 'out', 'M5 / P5', 'LCD'],
     ['lcd_data[0..7]', 'out', 'M4 L5 P11 N11 P13 M14 M12 K12', 'LCD_D0..D7'],
     ['link_tx', 'out', 'C14', 'J5 ไปบอร์ด 2'],
-], [5.4, 1.8, 4.4, 4.3], 'ขาของบอร์ด 1 (board1_top)', size=13, mono_cols=(0,))
+], [5.4, 1.8, 4.4, 4.3], 'ขาของบอร์ด 1 (board1_top)', size=14, mono_cols=(0,))
 table(['port', 'ทิศ', 'ขา', 'บนบอร์ด'], [
     ['clk', 'in', 'H11', 'OSC 50 MHz'],
     ['link_rx', 'in', 'C14', 'J5 จากบอร์ด 1'],
@@ -688,7 +689,7 @@ table(['port', 'ทิศ', 'ขา', 'บนบอร์ด'], [
     ['shelf_led[3..5]', 'out', 'F14, G14, D13', 'โซนน้ำเงิน: ชั้นแดง น้ำเงิน เขียว (LED เหลือง)'],
     ['shelf_led[6..8]', 'out', 'D12, E12, F12', 'โซนเขียว: ชั้นแดง น้ำเงิน เขียว (LED เหลือง)'],
     ['seg, dp, digit', 'out', 'เหมือนบอร์ด 1', '7-segment'],
-], [3.8, 1.6, 4.0, 6.5], 'ขาของบอร์ด 2 (board2_top)', size=13, mono_cols=(0,))
+], [3.8, 1.6, 4.0, 6.5], 'ขาของบอร์ด 2 (board2_top)', size=14, mono_cols=(0,))
 
 h1('ภาคผนวก ข รายการหนังสือและไฟล์ในโครงงาน')
 table(['เล่ม', 'โซน', 'ชั้น', 'คงเหลือ'], [
