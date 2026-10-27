@@ -3,7 +3,7 @@
 from docx import Document
 from docx.shared import Pt, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
-from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
 from docx.enum.section import WD_SECTION
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
@@ -44,7 +44,7 @@ set_font(st.element.get_or_add_rPr(), BODY)
 st.paragraph_format.space_after = Pt(0)
 st.paragraph_format.line_spacing = 1.0
 
-for name, size in (('Heading 1', 20), ('Heading 2', 18), ('Heading 3', 16)):
+for name, size in (('Heading 1', 22), ('Heading 2', 18), ('Heading 3', 16)):
     hs = doc.styles[name]
     hs.font.name = FONT
     hs.font.size = Pt(size)
@@ -56,8 +56,10 @@ for name, size in (('Heading 1', 20), ('Heading 2', 18), ('Heading 3', 16)):
         if col is not None and col.get(qn(a)) is not None:
             del col.attrib[qn(a)]
     set_font(hs.element.get_or_add_rPr(), size)
-    hs.paragraph_format.space_before = Pt(14 if name == 'Heading 1' else 8)
-    hs.paragraph_format.space_after = Pt(4)
+    hs.paragraph_format.space_before = Pt({'Heading 1': 0, 'Heading 2': 12, 'Heading 3': 8}[name])
+    hs.paragraph_format.space_after = Pt({'Heading 1': 18, 'Heading 2': 4, 'Heading 3': 2}[name])
+    if name == 'Heading 1':
+        hs.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
     hs.paragraph_format.keep_with_next = True
 for name in ('TOC 1', 'TOC 2', 'TOC 3'):
     try:
@@ -136,12 +138,32 @@ def shade(cell, hexcolor):
 
 def cell_text(cell, text, bold=False, size=14, mono=False, align=WD_ALIGN_PARAGRAPH.LEFT):
     cell.text = ''
+    cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
     lines = str(text).split('\n')
     for k, ln in enumerate(lines):
         p = cell.paragraphs[0] if k == 0 else cell.add_paragraph()
         p.alignment = align
         p.paragraph_format.space_after = Pt(0)
-        run(p, ln, bold, size - 3 if mono else size, mono=mono, cs_size=size)
+        run(p, ln, bold, 10 if mono else size, mono=mono, cs_size=size)
+
+def style_table(t, pad=45, color='BFC5CC'):
+    tblPr = t._tbl.tblPr
+    borders = OxmlElement('w:tblBorders')
+    for edge in ('top', 'left', 'bottom', 'right', 'insideH', 'insideV'):
+        el = OxmlElement(f'w:{edge}')
+        el.set(qn('w:val'), 'single'); el.set(qn('w:sz'), '4'); el.set(qn('w:space'), '0'); el.set(qn('w:color'), color)
+        borders.append(el)
+    look = tblPr.find(qn('w:tblLook'))
+    (look.addprevious(borders) if look is not None else tblPr.append(borders))
+    mar = OxmlElement('w:tblCellMar')
+    for edge, v in (('top', pad), ('bottom', pad), ('left', 110), ('right', 110)):
+        el = OxmlElement(f'w:{edge}'); el.set(qn('w:w'), str(v)); el.set(qn('w:type'), 'dxa'); mar.append(el)
+    (look.addprevious(mar) if look is not None else tblPr.append(mar))
+
+def spacer(pt=8):
+    p = doc.add_paragraph()
+    p.paragraph_format.space_after = Pt(0)
+    p.paragraph_format.line_spacing = Pt(pt)
 
 tbl_no = [0]
 fig_no = [0]
@@ -153,7 +175,7 @@ def caption(kind, text):
         fig_no[0] += 1; label = f'รูปที่ {fig_no[0]}'
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER if kind == 'figure' else WD_ALIGN_PARAGRAPH.LEFT
-    p.paragraph_format.space_before = Pt(4 if kind == 'figure' else 8)
+    p.paragraph_format.space_before = Pt(4 if kind == 'figure' else 10)
     p.paragraph_format.space_after = Pt(8 if kind == 'figure' else 3)
     p.paragraph_format.keep_with_next = (kind == 'table')
     run(p, label + ' ', bold=True, size=15)
@@ -166,9 +188,10 @@ def table(header, rows, widths, title=None, size=14, mono_cols=()):
     t = doc.add_table(rows=1 + len(rows), cols=len(header))
     t.style = 'Table Grid'
     t.alignment = WD_TABLE_ALIGNMENT.CENTER
+    style_table(t)
     for i, h in enumerate(header):
-        cell_text(t.rows[0].cells[i], h, bold=True, size=size)
-        shade(t.rows[0].cells[i], 'DCE6F2')
+        cell_text(t.rows[0].cells[i], h, bold=True, size=size, align=WD_ALIGN_PARAGRAPH.CENTER)
+        shade(t.rows[0].cells[i], 'E8EEF6')
     trPr = t.rows[0]._tr.get_or_add_trPr()
     hdr = OxmlElement('w:tblHeader'); trPr.append(hdr)
     for r, row in enumerate(rows, 1):
@@ -182,7 +205,7 @@ def table(header, rows, widths, title=None, size=14, mono_cols=()):
         for c in row.cells:
             for cp in c.paragraphs:
                 cp.paragraph_format.keep_with_next = True
-    doc.add_paragraph().paragraph_format.space_after = Pt(2)
+    spacer()
     return t
 
 def figure(path, width_cm, text):
@@ -196,8 +219,9 @@ def figure(path, width_cm, text):
 def code(lines):
     t = doc.add_table(rows=1, cols=1)
     t.style = 'Table Grid'
+    style_table(t, pad=110)
     c = t.rows[0].cells[0]
-    shade(c, 'F4F4F4')
+    shade(c, 'F6F7F9')
     c.text = ''
     for k, ln in enumerate(lines.strip('\n').split('\n')):
         p = c.paragraphs[0] if k == 0 else c.add_paragraph()
@@ -205,7 +229,7 @@ def code(lines):
         run(p, ln if ln else ' ', size=10, mono=True, cs_size=14)
     c.width = Cm(15.9)
     t.rows[0]._tr.get_or_add_trPr().append(OxmlElement('w:cantSplit'))   # ไม่แยกโค้ดข้ามหน้า
-    doc.add_paragraph().paragraph_format.space_after = Pt(2)
+    spacer()
 
 def page_break():
     doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
@@ -226,6 +250,13 @@ fp = sec.footer.paragraphs[0]
 fp.alignment = WD_ALIGN_PARAGRAPH.CENTER
 field(fp, 'PAGE', '1')
 sec.different_first_page_header_footer = True
+hp = sec.header.paragraphs[0]
+hp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+run(hp, 'Design Document · Smart Library', size=12, color='7F7F7F')
+pPr = hp._p.get_or_add_pPr()
+bdr = OxmlElement('w:pBdr'); bot = OxmlElement('w:bottom')
+bot.set(qn('w:val'), 'single'); bot.set(qn('w:sz'), '4'); bot.set(qn('w:space'), '4'); bot.set(qn('w:color'), 'BFC5CC')
+bdr.append(bot); pPr.append(bdr)
 
 # =====================================================================
 # ปก
@@ -333,7 +364,7 @@ items([
     'อินพุตจากภายนอกทุกเส้นต้องผ่านวงจรซิงโครไนซ์ 2 ชั้นก่อนใช้งาน เพราะมาไม่พร้อมกับสัญญาณนาฬิกา',
     'UART ใช้ 115200 บิตต่อวินาที 8N1 ให้ตรงกับ ESP8266 และใช้ 50 MHz / 115200 ≈ 434 clock ต่อบิต',
     'ADC ใช้ SCK ไม่เกิน 1 MHz และต้องเฉลี่ยค่า เพราะสัญญาณ LM35 เล็ก (ราว 12 ระดับ ADC ต่อ 1 °C)',
-    'LED ภายนอกต่อแบบ Active-HIGH ผ่านตัวต้านทาน 220 Ω และขาเดียวต้องไม่จ่ายเกิน 12 mA',
+    'LED ภายนอกต่อแบบ Active-HIGH ผ่านตัวต้านทาน 220 โอห์ม และขาเดียวต้องไม่จ่ายเกิน 12 mA',
     'อุปกรณ์กำลังสูง (พัดลม) ต้องมีวงจรขับแยก',
     'ต้องอัปโหลดโปรแกรม ESP8266 ผ่าน FPGA ได้ โดยไม่ต้องถอดสาย',
 ], num=True)
@@ -495,10 +526,10 @@ items([
 
 h2('3.8 การออกแบบวงจรภายนอก')
 table(['วงจร', 'การต่อ', 'การคำนวณและเหตุผล'], [
-    ['LED ไฟโซนและไฟชั้น', 'ขา FPGA → R 220 Ω → LED → GND', 'LED แดง Vf ≈ 2.0 V: (3.3 − 2.0) / 220 ≈ 5.9 mA ไม่เกิน 12 mA ต่อขา'],
-    ['ไฟห้อง 3 ดวง', 'ขา M13 ต่อ (R 220 Ω + LED) 3 ชุดขนานกันลง GND', 'LED ขาว Vf ≈ 3.0 V ได้ราว 1.4 mA ต่อดวง รวมราว 4 mA แต่ละดวงต้องมีตัวต้านทานของตัวเอง ความสว่างจึงเท่ากัน'],
+    ['LED ไฟโซนและไฟชั้น', 'ขา FPGA → R 220 โอห์ม → LED → GND', 'LED แดง Vf ≈ 2.0 V: (3.3 − 2.0) / 220 ≈ 5.9 mA ไม่เกิน 12 mA ต่อขา'],
+    ['ไฟห้อง 3 ดวง', 'ขา M13 ต่อ (R 220 โอห์ม + LED) 3 ชุดขนานกันลง GND', 'LED ขาว Vf ≈ 3.0 V ได้ราว 1.4 mA ต่อดวง รวมราว 4 mA แต่ละดวงต้องมีตัวต้านทานของตัวเอง ความสว่างจึงเท่ากัน'],
     ['ชั้นสีเขียว', 'ใช้ LED สีเหลืองแทน LED สีเขียว', 'LED เขียวแบบสว่าง (InGaN) มี Vf ราว 3 V ที่ไฟ 3.3 V จึงได้กระแสน้อยและหรี่ LED เหลือง Vf ≈ 2.1 V ได้ราว 5.5 mA สว่างกว่าชัดเจน ส่วนไฟโซนยังใช้สีเขียวตามสีโซน'],
-    ['พัดลม', 'F11 → R 1 kΩ → ทรานซิสเตอร์ NPN (หรือ MOSFET logic-level) → พัดลม + ไดโอดคร่อม', 'ขา FPGA จ่ายกระแสไม่พอสำหรับมอเตอร์ ไดโอดป้องกันแรงดันย้อนตอนตัดไฟมอเตอร์'],
+    ['พัดลม', 'F11 → R 1 กิโลโอห์ม → ทรานซิสเตอร์ NPN (หรือ MOSFET logic-level) → พัดลม + ไดโอดคร่อม', 'ขา FPGA จ่ายกระแสไม่พอสำหรับมอเตอร์ ไดโอดป้องกันแรงดันย้อนตอนตัดไฟมอเตอร์'],
     ['MQ-2', 'DO → L14 (ระดับ 3.3 V)', 'ใช้ขาดิจิทัล ไม่ต้องใช้ ADC ปรับความไวที่ตัวต้านทานปรับค่าบนโมดูล'],
     ['สายระหว่างบอร์ด', 'C14 → C14 และ GND → GND', 'ต้องต่อ GND ร่วม มิฉะนั้นระดับสัญญาณไม่มีจุดอ้างอิงและเฟรมเสีย'],
 ], [3.0, 5.4, 7.5], 'วงจรภายนอกบอร์ด', size=13)
