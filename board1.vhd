@@ -481,7 +481,7 @@ end rtl;
 -- ============================================================
 -- เครื่องเล่นเพลงสั้นทาง buzzer (piezo เรโซแนนซ์ 3.8 kHz คู่มือหน้า 16)
 -- start = '1' หนึ่ง clock -> เล่นเพลงจนจบ (กด start ระหว่างเล่น = เริ่มใหม่)
--- เพลง: Twinkle Twinkle Little Star วรรคแรก C C G G A A G (อ็อกเทฟ 6 ให้ดังใกล้ช่วงเรโซแนนซ์)
+-- เพลง: ท่อนเปิด Super Mario Bros. จังหวะเร็ว โน้ตละ 125 ms (E E - E - C E G - G ต่ำ) ยาวประมาณ 2 วินาที
 -- ============================================================
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
@@ -497,9 +497,11 @@ end melody;
 
 architecture rtl of melody is
   constant MS  : integer := 50_000;   -- 1 ms ที่ 50 MHz
-  constant GAP : integer := 40;       -- เงียบท้ายโน้ต 40 ms ให้โน้ตซ้ำแยกกันได้ยิน
+  constant GAP : integer := 25;       -- เงียบท้ายโน้ต 25 ms ให้โน้ตซ้ำแยกกันได้ยิน
 
   -- half = จำนวน clock ครึ่งคาบ = 50 MHz / (2 x ความถี่) / 0 = พัก
+  constant R  : integer := 0;         -- พัก
+  constant G5 : integer := 31_888;    --  784.0 Hz
   constant C6 : integer := 23_889;    -- 1046.5 Hz
   constant D6 : integer := 21_282;    -- 1174.7 Hz
   constant E6 : integer := 18_961;    -- 1318.5 Hz
@@ -513,8 +515,9 @@ architecture rtl of melody is
   end record;
   type song_t is array (natural range <>) of note_t;
   constant SONG : song_t := (
-    (C6, 300), (C6, 300), (G6, 300), (G6, 300),
-    (A6, 300), (A6, 300), (G6, 600)
+    (E6, 125), (E6, 125), (R, 125), (E6, 125),
+    (R, 125), (C6, 125), (E6, 250), (G6, 250),
+    (R, 250), (G5, 250)
   );
 
   signal playing : std_logic := '0';
