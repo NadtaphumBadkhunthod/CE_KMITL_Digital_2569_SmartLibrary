@@ -24,5 +24,6 @@ design_doc_src/raw.docx
 proposal_src/
 design_doc_src/
 
-# Local notes
-PROJECT_EXPLAINED.md
+# Local only: notes, test pages, SRAM (test) upload scripts
+_local/
+upload_*_sram.bat

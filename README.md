@@ -6,10 +6,6 @@
 ตรรกะควบคุมทั้งหมดอยู่ใน FPGA ส่วน ESP8266 บนบอร์ด 1 ทำหน้าที่เป็นเว็บเซิร์ฟเวอร์และเก็บรายการหนังสือ
 ผู้ใช้ค้นหาหนังสือผ่านคอมพิวเตอร์ของห้องสมุดที่เชื่อมต่อ Wi-Fi ของ ESP8266 ไว้แล้ว
 
-เอกสารหลัก:
-- [SYSTEM.md](SYSTEM.md) เอกสารระบบทั้งหมด (ขา โปรโตคอล วิธี build และรายการทดสอบ)
-- [pins.md](pins.md) บันทึกขา การต่อสาย และผลตรวจบนบอร์ด
-
 ## ความสามารถ
 
 | ระบบ | การทำงาน | อยู่ที่ |
@@ -30,17 +26,25 @@
                                                        LCD 16×2, 7-segment, buzzer
 ```
 
-## ไฟล์
+## โครงสร้างไฟล์
+
+```
+fpga/
+  board1/      board1.vhd, board1_top.bit, board1_top.xdc, build_board1.tcl, upload_board1_prom.bat
+  board2/      board2.vhd, board2_top.bit, board2_top.xdc, build_board2.tcl, upload_board2_prom.bat
+  esp_upload/  esp_upload.vhd, esp_upload_top.bit, ... (วงจรต่อสายทะลุ USB ↔ ESP8266 ใช้ตอนอัปโหลดโปรแกรม ESP)
+esp8266/
+  smart_library/  smart_library.ino (โปรแกรม ESP8266), index_html.h (หน้าเว็บ)
+```
 
 | ไฟล์ | หน้าที่ |
 |---|---|
-| [board1.vhd](board1.vhd) | บอร์ด 1 (top = `board1_top`): uart_rx, uart_frame_tx, debounce, mcp3208, sevenseg, lcd16x2, melody |
-| [board2.vhd](board2.vhd) | บอร์ด 2 (top = `board2_top`): รับตำแหน่ง, decoder ไฟโซน/ไฟชั้น, sevenseg_loc, ตัวนับเฟรมเสีย |
-| [esp_upload.vhd](esp_upload.vhd) | วงจรส่งข้อมูลทะลุ USB ↔ ESP8266 สำหรับอัปโหลดโปรแกรม ESP |
-| `*.bit`, `upload_*.bat` | ไฟล์โปรแกรม FPGA ที่ build แล้ว และสคริปต์โหลดลงบอร์ด (SRAM ชั่วคราว / PROM ถาวร) |
-| [fpga_build/](fpga_build) | ไฟล์ขา XDC และสคริปต์ build ของ Vivado |
-| [smart_library/](smart_library) | โปรแกรม ESP8266 (`smart_library.ino`) และหน้าเว็บ (`index_html.h`) |
-| [web.html](web.html) | สำเนาหน้าเว็บเปิดบนคอมได้ (ใช้ข้อมูลตัวอย่างถ้าไม่มี ESP) |
+| [fpga/board1/board1.vhd](fpga/board1/board1.vhd) | บอร์ด 1 (top = `board1_top`): uart_rx, uart_frame_tx, debounce, mcp3208, sevenseg, lcd16x2, melody |
+| [fpga/board2/board2.vhd](fpga/board2/board2.vhd) | บอร์ด 2 (top = `board2_top`): รับตำแหน่ง, decoder ไฟโซน/ไฟชั้น, sevenseg_loc, ตัวนับเฟรมเสีย |
+| [fpga/esp_upload/esp_upload.vhd](fpga/esp_upload/esp_upload.vhd) | วงจรส่งข้อมูลทะลุ USB ↔ ESP8266 สำหรับอัปโหลดโปรแกรม ESP |
+| `*.xdc`, `build_*.tcl` | ไฟล์ขาและสคริปต์ build ของ Vivado |
+| `*.bit`, `upload_*_prom.bat` | ไฟล์โปรแกรม FPGA ที่ build แล้ว และสคริปต์เขียนลง Flash PROM |
+| [esp8266/smart_library/](esp8266/smart_library) | โปรแกรม ESP8266 และหน้าเว็บ |
 
 ## โปรโตคอลสื่อสาร (UART 115200 8N1)
 
@@ -62,8 +66,8 @@
 ## วิธีติดตั้ง
 
 ### FPGA
-1. Build ด้วย Vivado (part `xc7s15ftgb196-1`) จาก `fpga_build/build_board1.tcl` และ `build_board2.tcl` หรือใช้ไฟล์ `.bit` ที่มีอยู่
-2. รัน `upload_board1_prom.bat` / `upload_board2_prom.bat` แล้วกด SW1
+1. Build ด้วย Vivado (part `xc7s15ftgb196-1`) จาก `fpga/board1/build_board1.tcl` และ `fpga/board2/build_board2.tcl` หรือใช้ไฟล์ `.bit` ที่มีอยู่
+2. รัน `fpga/board1/upload_board1_prom.bat` / `fpga/board2/upload_board2_prom.bat` แล้วกด SW1
 3. jumper: ถอด J9, บอร์ด 1 ใส่ J6 ที่ Enable (buzzer) และ J11 ที่ Enable (ESP8266)
 
 ### ESP8266 (ผ่าน USB-UART ของบอร์ด 1)

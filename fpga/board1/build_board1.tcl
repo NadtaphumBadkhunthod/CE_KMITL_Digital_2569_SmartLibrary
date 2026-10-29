@@ -1,5 +1,5 @@
 catch {config_webtalk -install off}
-read_vhdl "C:/Users/saire/Desktop/KMITL/Digital/Project/board1.vhd"
+read_vhdl "C:/Users/saire/Desktop/KMITL/Digital/Project/fpga/board1/board1.vhd"
 read_xdc "board1_top.xdc"
 synth_design -top board1_top -part xc7s15ftgb196-1 -directive RuntimeOptimized
 catch {
