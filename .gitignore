@@ -17,3 +17,9 @@ desktop.ini
 .taste-skill/
 proposal_src/raw.docx
 design_doc_src/raw.docx
+
+# Documents (proposal, design document) kept local only
+*.docx
+*.pdf
+proposal_src/
+design_doc_src/

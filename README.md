@@ -7,8 +7,6 @@
 ผู้ใช้ค้นหาหนังสือผ่านคอมพิวเตอร์ของห้องสมุดที่เชื่อมต่อ Wi-Fi ของ ESP8266 ไว้แล้ว
 
 เอกสารหลัก:
-- [DesignDocument_SmartLibrary.pdf](DesignDocument_SmartLibrary.pdf) อธิบายการหาข้อมูล การออกแบบแบบ Top-Down การพัฒนา และการทดสอบ
-- [Proposal_SmartLibrary_updated.pdf](Proposal_SmartLibrary_updated.pdf) ข้อเสนอโครงงานฉบับปรับปรุงตามชิ้นงานจริง ([ฉบับแรก](Proposal_SmartLibrary.pdf))
 - [SYSTEM.md](SYSTEM.md) เอกสารระบบทั้งหมด (ขา โปรโตคอล วิธี build และรายการทดสอบ)
 - [pins.md](pins.md) บันทึกขา การต่อสาย และผลตรวจบนบอร์ด
 
@@ -43,7 +41,6 @@
 | [fpga_build/](fpga_build) | ไฟล์ขา XDC และสคริปต์ build ของ Vivado |
 | [smart_library/](smart_library) | โปรแกรม ESP8266 (`smart_library.ino`) และหน้าเว็บ (`index_html.h`) |
 | [web.html](web.html) | สำเนาหน้าเว็บเปิดบนคอมได้ (ใช้ข้อมูลตัวอย่างถ้าไม่มี ESP) |
-| [proposal_src/](proposal_src), [design_doc_src/](design_doc_src) | สคริปต์และแผนภาพที่ใช้สร้าง proposal และ Design Document |
 
 ## โปรโตคอลสื่อสาร (UART 115200 8N1)
 
