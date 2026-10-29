@@ -3,7 +3,8 @@
 ไฟล์ต้นทางของ `DesignDocument_SmartLibrary.docx`
 
 1. แก้เนื้อหาใน `build_design_doc.py` / แผนภาพใน `fig_*.html`
-2. แผนภาพ: เปิด `fig_*.html` ใน Chrome แล้วจับภาพเป็น `fig_*.png` (scale 2)
+2. แผนภาพที่ใช้: `fig_hierarchy`, `fig_system`, `fig_board1v`, `fig_board2v`, `fig_fsm3` เปิดใน Chrome แล้วจับภาพเป็น `.png` กว้าง 1000 px (scale 3) ส่วน `fig_board1`, `fig_board2`, `fig_fsm`, `fig_fsm2` เป็นฉบับเก่า
+   ตราสถาบันบนหน้าปกอยู่ใน `kmitl_seal.png`
 3. สร้างไฟล์:
 
 ```
