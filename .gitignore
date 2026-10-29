@@ -23,3 +23,6 @@ design_doc_src/raw.docx
 *.pdf
 proposal_src/
 design_doc_src/
+
+# Local notes
+PROJECT_EXPLAINED.md
