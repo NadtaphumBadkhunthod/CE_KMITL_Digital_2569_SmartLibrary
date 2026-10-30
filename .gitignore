@@ -27,3 +27,8 @@ design_doc_src/
 # Local only: notes, test pages, SRAM (test) upload scripts
 _local/
 upload_*_sram.bat
+
+# Local only: Vivado build scripts, constraints, PROM upload scripts
+*.tcl
+*.xdc
+*.bat
